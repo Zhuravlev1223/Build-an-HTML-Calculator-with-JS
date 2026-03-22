@@ -1,165 +1,192 @@
-const display = document.getElementById('display');
-let currentInput = '0';
-let shouldResetDisplay = false;
-
-
-function safeEvaluate(expression) {
-    try {
-        expression = expression.replace(/\s/g, '');
-        expression = expression.replace(/×/g, '*');
-        
-        if (!expression || expression === '.') return '0';
-        
-        const tokens = tokenize(expression);
-        if (!tokens.length) return '0';
-        
-        return evaluateTokens(tokens).toString();
-    } catch (error) {
-        console.error('Ошибка вычисления:', error);
-        return 'Ошибка';
-    }
+const calculate = (n1, operator, n2) => {
+  const firstNum = parseFloat(n1)
+  const secondNum = parseFloat(n2)
+  if (operator === 'add') return firstNum + secondNum
+  if (operator === 'subtract') return firstNum - secondNum
+  if (operator === 'multiply') return firstNum * secondNum
+  if (operator === 'divide') return firstNum / secondNum
 }
 
-function tokenize(expression) {
-    const tokens = [];
-    let i = 0;
-    
-    while (i < expression.length) {
-        const char = expression[i];
-        
-        if ((char >= '0' && char <= '9') || char === '.') {
-            let number = '';
-            while (i < expression.length && 
-                   ((expression[i] >= '0' && expression[i] <= '9') || expression[i] === '.')) {
-                number += expression[i];
-                i++;
-            }
-            if ((number.match(/\./g) || []).length <= 1) {
-                tokens.push({ type: 'number', value: parseFloat(number) });
-            }
-            continue;
-        }
-        
-        if (['+', '-', '*', '/'].includes(char)) {
-            tokens.push({ type: 'operator', value: char });
-            i++;
-            continue;
-        }
-        
-        throw new Error(`Неизвестный символ: ${char}`);
-    }
-    
-    return tokens;
+const getKeyType = (key) => {
+  const { action } = key.dataset
+  if (!action) return 'number'
+  if (
+    action === 'add' ||
+    action === 'subtract' ||
+    action === 'multiply' ||
+    action === 'divide'
+  ) return 'operator'
+  if (action === 'memory-clear' || action === 'memory-recall' || action === 'memory-add' || action === 'memory-subtract') return 'memory'
+  if (action === 'delete') return 'delete'
+  return action
 }
 
-function evaluateTokens(tokens) {
-    tokens = handleMultiplicationDivision(tokens);
-    return handleAdditionSubtraction(tokens);
+const createResultString = (key, displayedNum, state) => {
+  const keyContent = key.textContent
+  const { action } = key.dataset
+  const {
+    firstValue,
+    modValue,
+    operator,
+    previousKeyType
+  } = state
+  const keyType = getKeyType(key)
+
+  if (keyType === 'number') {
+    return displayedNum === '0' ||
+      previousKeyType === 'operator' ||
+      previousKeyType === 'calculate'
+      ? keyContent
+      : displayedNum + keyContent
+  }
+
+  if (keyType === 'decimal') {
+    if (!displayedNum.includes('.')) return displayedNum + '.'
+    if (previousKeyType === 'operator' || previousKeyType === 'calculate') return '0.'
+    return displayedNum
+  }
+
+  if (
+    action === 'add' ||
+    action === 'subtract' ||
+    action === 'multiply' ||
+    action === 'divide'
+  ) {
+    return firstValue &&
+      operator &&
+      previousKeyType !== 'operator' &&
+      previousKeyType !== 'calculate'
+      ? calculate(firstValue, operator, displayedNum)
+      : displayedNum
+  }
+
+  if (keyType === 'delete') {
+    if (displayedNum.length > 1) {
+      return displayedNum.slice(0, -1)
+    }
+    return '0'
+  }
+
+  if (keyType === 'clear') return '0'
+
+  if (keyType === 'calculate') {
+    const modValueData = state.modValue
+    return firstValue
+      ? previousKeyType === 'calculate'
+        ? calculate(displayedNum, operator, modValueData)
+        : calculate(firstValue, operator, displayedNum)
+      : displayedNum
+  }
+
+  if (keyType === 'memory') {
+    if (action === 'memory-clear') return displayedNum
+    if (action === 'memory-recall') return state.memory || '0'
+    if (action === 'memory-add' || action === 'memory-subtract') return displayedNum
+  }
+
+  return displayedNum
 }
 
-function handleMultiplicationDivision(tokens) {
-    for (let i = 0; i < tokens.length; i++) {
-        if (tokens[i].type === 'operator' && (tokens[i].value === '*' || tokens[i].value === '/')) {
-            const left = tokens[i - 1].value;
-            const operator = tokens[i].value;
-            const right = tokens[i + 1].value;
-            
-            let result;
-            if (operator === '*') {
-                result = left * right;
-            } else {
-                if (right === 0) throw new Error('Деление на ноль');
-                result = left / right;
-            }
-            
-            tokens.splice(i - 1, 3, { type: 'number', value: result });
-            i = Math.max(-1, i - 2);
-        }
-    }
-    return tokens;
-}
+const updateCalculatorState = (key, calculator, calculatedValue, displayedNum) => {
+  const keyType = getKeyType(key)
+  const { action } = key.dataset
+  const {
+    firstValue,
+    modValue,
+    operator,
+    previousKeyType,
+    memory = '0'
+  } = calculator.dataset
 
-function handleAdditionSubtraction(tokens) {
-    let result = tokens[0].value;
-    
-    for (let i = 1; i < tokens.length; i += 2) {
-        const operator = tokens[i].value;
-        const right = tokens[i + 1].value;
-        
-        if (operator === '+') {
-            result += right;
-        } else {
-            result -= right;
-        }
-    }
-    
-    return result;
-}
+  calculator.dataset.previousKeyType = keyType
 
-function appendToDisplay(value) {
-    if (shouldResetDisplay) {
-        currentInput = '0';
-        shouldResetDisplay = false;
-    }
+  if (keyType === 'number') {
+    calculator.dataset.previousKeyType = 'number'
+  }
 
-    if (currentInput === '0' && value !== '.') {
-        currentInput = value;
+  if (keyType === 'decimal') {
+    calculator.dataset.previousKeyType = 'decimal'
+  }
+
+  if (keyType === 'delete') {
+    calculator.dataset.previousKeyType = 'delete'
+  }
+
+  if (
+    action === 'add' ||
+    action === 'subtract' ||
+    action === 'multiply' ||
+    action === 'divide'
+  ) {
+    if (
+      firstValue &&
+      operator &&
+      previousKeyType !== 'operator' &&
+      previousKeyType !== 'calculate'
+    ) {
+      calculator.dataset.firstValue = calculatedValue
     } else {
-        currentInput += value;
+      calculator.dataset.firstValue = displayedNum
     }
 
-    display.value = currentInput;
-}
+    calculator.dataset.previousKeyType = 'operator'
+    calculator.dataset.operator = action
+  }
 
-function clearDisplay() {
-    currentInput = '0';
-    shouldResetDisplay = false;
-    display.value = currentInput;
-}
+  if (keyType === 'clear') {
+    calculator.dataset.firstValue = ''
+    calculator.dataset.modValue = ''
+    calculator.dataset.operator = ''
+    calculator.dataset.previousKeyType = 'clear'
+  }
 
-function deleteLast() {
-    if (currentInput.length > 1) {
-        currentInput = currentInput.slice(0, -1);
-    } else {
-        currentInput = '0';
-    }
-    display.value = currentInput;
-}
+  if (keyType === 'calculate') {
+    calculator.dataset.modValue = firstValue && previousKeyType === 'calculate'
+      ? modValue
+      : displayedNum
 
-function calculate() {
-    const result = safeEvaluate(currentInput);
-    display.value = result;
-    currentInput = result;
-    shouldResetDisplay = true;
-}
+    calculator.dataset.previousKeyType = 'calculate'
+  }
 
-// Обработка клавиатуры
-document.addEventListener('keydown', function(event) {
-    const key = event.key;
+  if (keyType === 'memory') {
+    const currentNum = parseFloat(displayedNum || '0')
+    const memoryValue = parseFloat(memory || '0')
     
-    if (key >= '0' && key <= '9' || key === '.') {
-        event.preventDefault();
-        appendToDisplay(key);
-    } else if (key === '+' || key === '-') {
-        event.preventDefault();
-        appendToDisplay(key);
-    } else if (key === '*') {
-        event.preventDefault();
-        appendToDisplay('*');
-    } else if (key === '/') {
-        event.preventDefault();
-        appendToDisplay('/');
-    } else if (key === 'Enter' || key === '=') {
-        event.preventDefault();
-        calculate();
-    } else if (key === 'Escape' || key === 'c' || key === 'C') {
-        event.preventDefault();
-        clearDisplay();
-    } else if (key === 'Backspace') {
-        event.preventDefault();
-        deleteLast();
+    if (action === 'memory-clear') {
+      calculator.dataset.memory = '0'
+    } else if (action === 'memory-add') {
+      calculator.dataset.memory = (memoryValue + currentNum).toString()
+    } else if (action === 'memory-subtract') {
+      calculator.dataset.memory = (memoryValue - currentNum).toString()
     }
-});
+    
+    calculator.dataset.previousKeyType = 'memory'
+  }
+}
 
-// Инициализация
-display.value = currentInput;
+const updateVisualState = (key, calculator) => {
+  const keyType = getKeyType(key)
+  Array.from(key.parentNode.children).forEach(k => k.classList.remove('is-depressed'))
+
+  if (keyType === 'operator') key.classList.add('is-depressed')
+}
+
+// Основной код
+const calculator = document.querySelector('.calculator')
+const keys = calculator.querySelector('.calculator__keys')
+const display = calculator.querySelector('.calculator__display')
+
+// Инициализация памяти
+calculator.dataset.memory = '0'
+
+keys.addEventListener('click', e => {
+  if (!e.target.matches('button')) return
+
+  const key = e.target
+  const displayedNum = display.textContent
+  const resultString = createResultString(key, displayedNum, calculator.dataset)
+
+  display.textContent = resultString
+  updateCalculatorState(key, calculator, resultString, displayedNum)
+  updateVisualState(key, calculator)
+})

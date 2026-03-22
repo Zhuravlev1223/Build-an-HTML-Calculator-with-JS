@@ -3,35 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSP-безопасный калькулятор</title>
+    <title>Калькулятор в горах</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="calculator">
-        <input type="text" class="display" id="display" readonly>
-        <div class="buttons">
-            <button class="clear" onclick="clearDisplay()">C</button>
-            <button class="clear" onclick="deleteLast()">⌫</button>
-            <button class="operator" onclick="appendToDisplay('/')">/</button>
-            <button class="operator" onclick="appendToDisplay('*')">×</button>
-            
-            <button class="number" onclick="appendToDisplay('7')">7</button>
-            <button class="number" onclick="appendToDisplay('8')">8</button>
-            <button class="number" onclick="appendToDisplay('9')">9</button>
-            <button class="operator" onclick="appendToDisplay('-')">-</button>
-            
-            <button class="number" onclick="appendToDisplay('4')">4</button>
-            <button class="number" onclick="appendToDisplay('5')">5</button>
-            <button class="number" onclick="appendToDisplay('6')">6</button>
-            <button class="operator" onclick="appendToDisplay('+')">+</button>
-            
-            <button class="number" onclick="appendToDisplay('1')">1</button>
-            <button class="number" onclick="appendToDisplay('2')">2</button>
-            <button class="number" onclick="appendToDisplay('3')">3</button>
-            <button class="equals" onclick="calculate()" rowspan="2">=</button>
-            
-            <button class="number zero" onclick="appendToDisplay('0')">0</button>
-            <button class="number" onclick="appendToDisplay('.')">.</button>
+    <!-- Облака -->
+    <div class="cloud"></div>
+    <div class="cloud"></div>
+    <div class="cloud"></div>
+    
+    <!-- Горы -->
+    <div class="mountains">
+        <div class="mountain"></div>
+        <div class="mountain"></div>
+        <div class="mountain"></div>
+        <div class="mountain"></div>
+    </div>
+    
+    <!-- Солнце -->
+    <div class="sun"></div>
+
+    <!-- Калькулятор -->
+    <div class="calculator-container">
+        <div class="calculator">
+            <div class="calculator__display">0</div>
+            <div class="calculator__keys">
+                <!-- Ряд памяти -->
+                <button class="key--memory" data-action="memory-clear">MC</button>
+                <button class="key--memory" data-action="memory-recall">MR</button>
+                <button class="key--memory" data-action="memory-add">M+</button>
+                <button class="key--memory" data-action="memory-subtract">M-</button>
+                
+                <!-- Ряд управления -->
+                <button class="key--clear" data-action="clear">C</button>
+                <button class="key--delete" data-action="delete">←</button>
+                <button class="key--operator" data-action="divide">÷</button>
+                <button class="key--operator" data-action="multiply">×</button>
+                
+                <!-- Строка 7-9 -->
+                <button>7</button>
+                <button>8</button>
+                <button>9</button>
+                <button class="key--operator" data-action="subtract">-</button>
+                
+                <!-- Строка 4-6 -->
+                <button>4</button>
+                <button>5</button>
+                <button>6</button>
+                <button class="key--operator" data-action="add">+</button>
+                
+                <!-- Строка 1-3 и равно сверху -->
+                <button>1</button>
+                <button>2</button>
+                <button>3</button>
+                <button class="key--equal" data-action="calculate">=</button>
+                
+                <!-- Ноль (2 колонны), точка и пусто -->
+                <button class="key--zero">0</button>
+                <button data-action="decimal">.</button>
+            </div>
         </div>
     </div>
 
