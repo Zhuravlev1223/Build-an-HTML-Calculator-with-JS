@@ -2,6 +2,8 @@
 
 Современный веб-калькулятор с красивым дизайном в стиле горного пейзажа. Реализован с использованием чистого JavaScript, HTML и CSS.
 
+![Demo](https://github.com/Zhuravlev1223/Build-an-HTML-Calculator-with-JS/blob/main/DEMOv1.gif)
+
 ## ✨ Возможности
 
 ### Основные функции
